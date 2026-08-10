@@ -63,7 +63,7 @@
   }
 
   .logo-placeholder {
-    height: 92px;
+    height: 48px;
     display: flex;
     align-items: center;
     flex-shrink: 0;
@@ -639,9 +639,34 @@
       </div>
 
       <div class="field-group">
+        <label for="employeeEmail">Email<span class="required">*</span></label>
+        <input type="email" id="employeeEmail" placeholder="name@example.com">
+        <span class="error-msg" id="employeeEmailError">A valid email is required.</span>
+      </div>
+
+      <div class="field-group">
         <label for="dateSubmitted">Date Submitted<span class="required">*</span></label>
         <input type="date" id="dateSubmitted">
         <span class="error-msg" id="dateSubmittedError">Date Submitted is required.</span>
+      </div>
+
+      <div class="field-group">
+        <label for="modeOfPayment">Mode of Payment<span class="required">*</span></label>
+        <select id="modeOfPayment">
+          <option value="" disabled selected>Select mode of payment</option>
+          <option value="Cash">Cash</option>
+          <option value="Bank Transfer">Bank Transfer</option>
+          <option value="GCash">GCash</option>
+          <option value="PayMaya">PayMaya</option>
+          <option value="Check">Check</option>
+        </select>
+        <span class="error-msg" id="modeOfPaymentError">Mode of Payment is required.</span>
+      </div>
+
+      <div class="field-group">
+        <label for="accountNumber">Account Number<span class="required">*</span></label>
+        <input type="text" id="accountNumber" placeholder="Enter account / mobile number">
+        <span class="error-msg" id="accountNumberError">Account Number is required.</span>
       </div>
 
       <div class="field-group field-group-signature">
@@ -916,6 +941,34 @@
       setInvalid(dateInput, dateError, false);
     }
 
+    const emailInput = document.getElementById('employeeEmail');
+    const emailError = document.getElementById('employeeEmailError');
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailInput.value.trim() || !emailPattern.test(emailInput.value.trim())) {
+      setInvalid(emailInput, emailError, true);
+      isValid = false;
+    } else {
+      setInvalid(emailInput, emailError, false);
+    }
+
+    const modeInput = document.getElementById('modeOfPayment');
+    const modeError = document.getElementById('modeOfPaymentError');
+    if (!modeInput.value) {
+      setInvalid(modeInput, modeError, true);
+      isValid = false;
+    } else {
+      setInvalid(modeInput, modeError, false);
+    }
+
+    const accountInput = document.getElementById('accountNumber');
+    const accountError = document.getElementById('accountNumberError');
+    if (!accountInput.value.trim()) {
+      setInvalid(accountInput, accountError, true);
+      isValid = false;
+    } else {
+      setInvalid(accountInput, accountError, false);
+    }
+
     const rows = tableBody.querySelectorAll('tr');
     let hasCompleteEntry = false;
     rows.forEach(row => {
@@ -956,13 +1009,19 @@
   resetBtn.addEventListener('click', function () {
     document.getElementById('employeeName').value = '';
     document.getElementById('department').value = '';
+    document.getElementById('employeeEmail').value = '';
     document.getElementById('dateSubmitted').value = '';
+    document.getElementById('modeOfPayment').value = '';
+    document.getElementById('accountNumber').value = '';
     clearSignature();
     clearReceiptFiles();
 
     setInvalid(document.getElementById('employeeName'), document.getElementById('employeeNameError'), false);
     setInvalid(document.getElementById('department'), document.getElementById('departmentError'), false);
+    setInvalid(document.getElementById('employeeEmail'), document.getElementById('employeeEmailError'), false);
     setInvalid(document.getElementById('dateSubmitted'), document.getElementById('dateSubmittedError'), false);
+    setInvalid(document.getElementById('modeOfPayment'), document.getElementById('modeOfPaymentError'), false);
+    setInvalid(document.getElementById('accountNumber'), document.getElementById('accountNumberError'), false);
     entriesError.classList.remove('show');
     hideBanner();
 
@@ -977,8 +1036,18 @@
   document.getElementById('department').addEventListener('input', function () {
     if (this.value.trim()) setInvalid(this, document.getElementById('departmentError'), false);
   });
+  document.getElementById('employeeEmail').addEventListener('input', function () {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (emailPattern.test(this.value.trim())) setInvalid(this, document.getElementById('employeeEmailError'), false);
+  });
   document.getElementById('dateSubmitted').addEventListener('change', function () {
     if (this.value) setInvalid(this, document.getElementById('dateSubmittedError'), false);
+  });
+  document.getElementById('modeOfPayment').addEventListener('change', function () {
+    if (this.value) setInvalid(this, document.getElementById('modeOfPaymentError'), false);
+  });
+  document.getElementById('accountNumber').addEventListener('input', function () {
+    if (this.value.trim()) setInvalid(this, document.getElementById('accountNumberError'), false);
   });
 
   // E-signature pad
