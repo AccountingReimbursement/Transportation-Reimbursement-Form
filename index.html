@@ -413,6 +413,11 @@
     transform: translateY(1px);
   }
 
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
   .btn-add {
     background: var(--surface);
     color: var(--gold-dark);
@@ -477,6 +482,12 @@
     background: var(--danger-soft);
     color: var(--danger);
     border: 1px solid rgba(192,57,43,0.2);
+  }
+
+  .status-banner.info {
+    background: var(--gold-pale);
+    color: var(--gold-dark);
+    border: 1px solid rgba(184,134,11,0.2);
   }
 
   /* Receipt upload */
@@ -739,6 +750,11 @@
 </div>
 
 <script>
+  // ============================================================
+  // CONFIG — paste your Make.com custom webhook URL here
+  // ============================================================
+  const WEBHOOK_URL = "PASTE_YOUR_MAKE_WEBHOOK_URL_HERE";
+
   const tableBody = document.getElementById('tableBody');
   const addRowBtn = document.getElementById('addRowBtn');
   const grandTotalEl = document.getElementById('grandTotal');
@@ -994,15 +1010,119 @@
     return isValid;
   }
 
-  submitBtn.addEventListener('click', function () {
+  // ---- Helpers to collect submission data ----
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        // reader.result is "data:<mime>;base64,<data>" — strip the prefix
+        const base64 = reader.result.split(',')[1];
+        resolve({
+          filename: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          base64: base64
+        });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function getSignatureBase64() {
+    if (!hasSignature) return null;
+    // toDataURL returns "data:image/png;base64,...."
+    return sigCanvas.toDataURL('image/png').split(',')[1];
+  }
+
+  function collectEntries() {
+    const rows = tableBody.querySelectorAll('tr');
+    const entries = [];
+    rows.forEach(row => {
+      const date = row.querySelector('.row-date').value;
+      const type = row.querySelector('.row-type').value.trim();
+      const from = row.querySelector('.row-from').value.trim();
+      const to = row.querySelector('.row-to').value.trim();
+      const reason = row.querySelector('.row-reason').value.trim();
+      const amount = row.querySelector('.row-amount').value;
+
+      if (date && type && from && to && reason && amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0) {
+        entries.push({
+          date: date,
+          type: type,
+          from: from,
+          to: to,
+          reason: reason,
+          amount: parseFloat(amount)
+        });
+      }
+    });
+    return entries;
+  }
+
+  async function buildPayload() {
+    const entries = collectEntries();
+    const receipts = await Promise.all(receiptFiles.map(fileToBase64));
+    const signatureBase64 = getSignatureBase64();
+
+    return {
+      employeeName: document.getElementById('employeeName').value.trim(),
+      department: document.getElementById('department').value.trim(),
+      employeeEmail: document.getElementById('employeeEmail').value.trim(),
+      dateSubmitted: document.getElementById('dateSubmitted').value,
+      modeOfPayment: document.getElementById('modeOfPayment').value,
+      accountNumber: document.getElementById('accountNumber').value.trim(),
+      grandTotal: calculateGrandTotal(),
+      signature: signatureBase64, // base64 PNG string, or null if not signed
+      receipts: receipts,          // array of { filename, mimeType, base64 }
+      entries: entries             // array of transportation line items — this is what your Make Iterator loops over
+    };
+  }
+
+  submitBtn.addEventListener('click', async function () {
     hideBanner();
-    if (validateForm()) {
-      const total = calculateGrandTotal();
-      const name = document.getElementById('employeeName').value.trim();
+
+    if (!validateForm()) {
+      showBanner('Please complete all required fields and at least one transportation entry before submitting.', 'error');
+      return;
+    }
+
+    if (WEBHOOK_URL.includes('https://hook.eu1.make.com/f5c2pd9m4n3x4d1frvnnb2k4ypexwj24')) {
+      showBanner('Webhook URL is not configured yet. Paste your Make.com webhook URL into WEBHOOK_URL in the script.', 'error');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting…';
+    showBanner('Submitting your request, please wait…', 'info');
+
+    try {
+      const payload = await buildPayload();
+
+      const response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error('Webhook responded with status ' + response.status);
+      }
+
+      const name = payload.employeeName;
+      const total = payload.grandTotal;
       const receiptNote = receiptFiles.length ? ` ${receiptFiles.length} receipt(s) attached.` : '';
       showBanner(`Request submitted successfully for ${name}. Grand Total: ₱${total.toFixed(2)}.${receiptNote}`, 'success');
-    } else {
-      showBanner('Please complete all required fields and at least one transportation entry before submitting.', 'error');
+
+      // Optional: uncomment to auto-reset the form after a successful submission
+      // resetBtn.click();
+
+    } catch (err) {
+      console.error('Submission failed:', err);
+      showBanner('Something went wrong submitting your request. Please check your connection and try again.', 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Request';
     }
   });
 
