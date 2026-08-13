@@ -754,6 +754,7 @@
   // CONFIG — paste your Make.com custom webhook URL here
   // ============================================================
    const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyLRrup8ZzgNrr-lGbVNVvmmvMoVRl3l9e5Ucljf29_jzzdQKd88dpktYq5cIcXbAY3/exec";
+ const TOKEN = 'pick-a-real-random-string-here';
   const tableBody = document.getElementById('tableBody');
   const addRowBtn = document.getElementById('addRowBtn');
   const grandTotalEl = document.getElementById('grandTotal');
@@ -1059,24 +1060,26 @@
     return entries;
   }
 
-  async function buildPayload() {
-    const entries = collectEntries();
-    const receipts = await Promise.all(receiptFiles.map(fileToBase64));
-    const signatureBase64 = getSignatureBase64();
+async function buildPayload() {
+  const entries = collectEntries();
+  const receipts = await Promise.all(receiptFiles.map(fileToBase64));
+  const signatureBase64 = getSignatureBase64();
 
-    return {
-      employeeName: document.getElementById('employeeName').value.trim(),
-      department: document.getElementById('department').value.trim(),
-      employeeEmail: document.getElementById('employeeEmail').value.trim(),
-      dateSubmitted: document.getElementById('dateSubmitted').value,
-      modeOfPayment: document.getElementById('modeOfPayment').value,
-      accountNumber: document.getElementById('accountNumber').value.trim(),
-      grandTotal: calculateGrandTotal(),
-      signature: signatureBase64, // base64 PNG string, or null if not signed
-      receipts: receipts,          // array of { filename, mimeType, base64 }
-      entries: entries             // array of transportation line items — this is what your Make Iterator loops over
-    };
-  }
+  return {
+    action: 'newSubmission',
+    token:'CHANGE_ME_TO_A_LONG_RANDOM_STRING',
+    employeeName: document.getElementById('employeeName').value.trim(),
+    department: document.getElementById('department').value.trim(),
+    employeeEmail: document.getElementById('employeeEmail').value.trim(),
+    dateSubmitted: document.getElementById('dateSubmitted').value,
+    modeOfPayment: document.getElementById('modeOfPayment').value,
+    accountNumber: document.getElementById('accountNumber').value.trim(),
+    grandTotal: calculateGrandTotal(),
+    signature: signatureBase64,
+    receipts: receipts,
+    entries: entries
+  };
+}
 
   submitBtn.addEventListener('click', async function () {
     hideBanner();
