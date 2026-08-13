@@ -1086,11 +1086,7 @@
       return;
     }
 
-    if (WEBHOOK_URL.includes('PASTE_YOUR_MAKE_WEBHOOK_URL_HERE') || !WEBHOOK_URL.startsWith('https://hook.')) {
-      showBanner('Webhook URL is not configured yet. Paste your Make.com webhook URL into WEBHOOK_URL in the script.', 'error');
-      return;
-    }
-
+  
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting…';
     showBanner('Submitting your request, please wait…', 'info');
